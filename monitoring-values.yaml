@@ -1,0 +1,28 @@
+prometheus:
+  prometheusSpec:
+    retention: 2d               # Cost Control: Retain metrics for only 2 days
+    scrapeInterval: 30s         # Cost Control: Scrape every 30s to reduce CPU overhead
+    serviceMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+    resources:
+      requests:
+        memory: "500Mi"
+        cpu: "200m"
+      limits:
+        memory: "1Gi"
+        cpu: "500m"
+
+grafana:
+  service:
+    type: NodePort
+    nodePort: 31000             # Expose directly on port 31000 per Lab guidelines
+  sidecar:
+    image:
+      tag: "1.28.0"             # Lock down version to dodge the known broken image tag
+  resources:
+    requests:
+      memory: "150Mi"
+      cpu: "100m"
+    limits:
+      memory: "300Mi"
+      cpu: "300m"
