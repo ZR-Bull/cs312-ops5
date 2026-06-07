@@ -67,6 +67,7 @@ override.tf.json
 *.tfvars
 *.tfvars.json
 *.hcl
+*.ini
 
 # Sensitive terraform files
 terraform.tfvars
