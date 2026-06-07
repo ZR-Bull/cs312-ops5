@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: minecraft-config
+  namespace: default
+data:
+  EULA: "TRUE"
+  TYPE: "FABRIC"
+  MEMORY: "2G"
+  VERSION: "1.21.11"
+  MOTD: "Zachary Bull - 934080392"

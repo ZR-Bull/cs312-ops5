@@ -1,0 +1,69 @@
+---
+- name: Bootstrap k3s Node for Minecraft Workloads
+  hosts: managed
+  become: true
+  vars:
+    k3s_version: "v1.29.3+k3s1" # Pin a stable version
+
+  tasks:
+    - name: Update apt cache and install unzip/awscli prerequisites
+      ansible.builtin.apt:
+        name:
+          - unzip
+          - awscli
+        state: present
+        update_cache: true
+
+    - name: Download and execute the k3s installation script
+      ansible.builtin.shell: |
+        curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="{{ k3s_version }}" sh -
+      args:
+        creates: /usr/local/bin/k3s
+
+    - name: Ensure k3s service is explicitly enabled and running
+      ansible.builtin.systemd:
+        name: k3s
+        state: started
+        enabled: true
+
+    - name: Create local .kube config directory for the ubuntu operator
+      ansible.builtin.file:
+        path: /home/ubuntu/.kube
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+        mode: "0755"
+
+    - name: Copy cluster-admin kubeconfig for non-root kubectl access
+      ansible.builtin.copy:
+        src: /etc/rancher/k3s/k3s.yaml
+        dest: /home/ubuntu/.kube/config
+        remote_src: true
+        owner: ubuntu
+        group: ubuntu
+        mode: "0600"
+
+    - name: Set KUBECONFIG environment variable in bashrc profile
+      ansible.builtin.lineinfile:
+        path: /home/ubuntu/.bashrc
+        line: "export KUBECONFIG=~/.kube/config"
+        state: present
+
+    - name: Generate ECR image pull secret idempotently
+      ansible.builtin.shell: |
+        kubectl create secret docker-registry ecr-secret \
+          --docker-server=625392048444.dkr.ecr.us-east-1.amazonaws.com \
+          --docker-username=AWS \
+          --docker-password=$(aws ecr get-login-password --region us-east-1) \
+          --dry-run=client -o yaml | kubectl apply -f -
+      environment:
+        KUBECONFIG: /home/ubuntu/.kube/config
+      changed_when: true
+
+    - name: Copy Kubernetes manifests from laptop to EC2 host
+      ansible.builtin.copy:
+        src: ./manifests/
+        dest: /home/ubuntu/manifests/
+        owner: ubuntu
+        group: ubuntu
+        mode: "0644"
