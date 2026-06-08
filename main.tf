@@ -19,7 +19,7 @@ data "aws_vpc" "default" {
 # Security Group: Strict control for SSH and Minecraft
 resource "aws_security_group" "cs312-ops5-sg" {
   name        = "cs312-ops5-sg"
-  description = "Security group for ops5. SSH (port 22) and Minecraft (port 25565)"
+  description = "Security group for ops5. SSH (port 22), Grafana (port 3000), and Minecraft (port 25565)"
   vpc_id      = data.aws_vpc.default.id
 
   ingress {
@@ -36,6 +36,14 @@ resource "aws_security_group" "cs312-ops5-sg" {
     to_port     = 25565
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description = "Grafana Dashboard Access"
+    from_port   = 31000
+    to_port     = 31000
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"] # For production, ideally limit to your own IP
   }
 
   egress {
